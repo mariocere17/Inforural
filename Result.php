@@ -8,6 +8,7 @@ $pass = '';
 $bd = 'tfg';
 $conexion = new mysqli('localhost', $user, $pass, $bd);
 
+//Funciones BBDD
 function getUserID($usuario){
     global $conexion;
     $sql_select = $conexion->query("SELECT id_usuario FROM usuarios WHERE nombre = '$usuario'");
@@ -102,6 +103,7 @@ function insertViaje($casa, $usuario, $id_meteorologia) {
     }
 }
 
+//obtencion / tratado de datos
 if (isset($_GET['casa'])) {
     $fecha = $_GET['fecha'];
     $casa = $_GET['casa'];
@@ -111,17 +113,23 @@ if (isset($_GET['casa'])) {
     $longitude = trim($coordsArray[1]);
 }
 
-if (isset($_POST["Volver"])) {
-    header("Location: select_casa.php");
-}
-
 if (isset($_POST["GuardarViaje"])) {
     $id_usuario = getUserID($usuario);
     $id_meteorologia = insertMeteorologia($casa);
     insertViaje($casa, $id_usuario, $id_meteorologia);
 }
 
+//Redireccionamiento
+if (isset($_POST["CerrarSesion"])) {
+    session_destroy();
+    header("Location: login.php");
+}
+
+if (isset($_POST["Volver"])) {
+    header("Location: select_casa.php");
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -139,7 +147,7 @@ if (isset($_POST["GuardarViaje"])) {
         <div class="alert alert-primary" role="alert">
             Bienvenido <?php echo htmlspecialchars($usuario); ?>
         </div>
-    <h1 class="my-4 text-center">Mapa de <?php echo htmlspecialchars($casa); ?></h1>
+        <h1 class="my-4 text-center">Mapa de <?php echo htmlspecialchars($casa); ?></h1>
         <div id="map"></div>
         <form id="distanceForm" class="mb-4">
             <div class="form-row">
@@ -155,16 +163,17 @@ if (isset($_POST["GuardarViaje"])) {
             <button type="button" class="btn btn-dark btn-block" onclick="calculateDistance()">Calcular Distancia</button>
         </form>
         <div id="distanceResult" class="mb-4"></div>
-
         <div id="weather" class="mb-4"></div>
-
         <form method="post" class="text-center mb-4">
             <div class="form-row">
-                <div class="form-group col-md-6">
-                    <input type="submit" id="Volver" name="Volver" value="Volver" class="btn btn-secondary btn-block">
+                <div class="form-group col-md-4">
+                    <input type="submit" id="Volver" name="Volver" value="Volver" class="btn btn-dark btn-block">
                 </div>
-                <div class="form-group col-md-6">
+                <div class="form-group col-md-4">
                     <input type="submit" id="GuardarViaje" name="GuardarViaje" value="Guardar Viaje" class="btn btn-success btn-block">
+                </div>
+                <div class="form-group col-md-4">
+                    <input type="submit" id="CerrarSesion" name="CerrarSesion" value="Cerrar Sesión" class="btn btn-danger btn-block">
                 </div>
             </div>
         </form>
@@ -176,8 +185,10 @@ if (isset($_POST["GuardarViaje"])) {
     </div>
 
     <script>
+        // INTEGRACION MAPBOX
         mapboxgl.accessToken = 'pk.eyJ1IjoibWFyaW9jZXJlIiwiYSI6ImNsd2ozOXA4OTByYzcya2t4cTZqaXUxenYifQ.X0aL0BBv4C_36QKPpSHHJQ';
 
+        //Creacion del mapa
         let map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v11',
@@ -185,6 +196,7 @@ if (isset($_POST["GuardarViaje"])) {
             zoom: 12
         });
 
+        //Creacion del marcador
         let marker = new mapboxgl.Marker()
             .setLngLat([<?php echo $longitude; ?>, <?php echo $latitude; ?>])
             .setPopup(
@@ -192,11 +204,11 @@ if (isset($_POST["GuardarViaje"])) {
                     .setHTML('<h3>Casa Rural</h3><p><?php echo htmlspecialchars($_GET['casa']); ?></p><p><?php echo $latitude; ?><br><?php echo $longitude; ?></p>')
             )
             .addTo(map);
-
         marker.getElement().addEventListener('click', () => {
             marker.togglePopup();
         });
 
+        //Funcion para añadir marcadores
         function addMarker(latitude, longitude, popupText) {
             let newMarker = new mapboxgl.Marker()
                 .setLngLat([longitude, latitude])
@@ -205,19 +217,17 @@ if (isset($_POST["GuardarViaje"])) {
                         .setHTML(popupText)
                 )
                 .addTo(map);
-
             newMarker.getElement().addEventListener('click', () => {
                 newMarker.togglePopup();
             });
         }
 
+        //Funcion para calcular distancias con la api de mapbox distances
         function calculateDistance() {
             let initialLatitude = document.getElementById('initialLatitude').value;
             let initialLongitude = document.getElementById('initialLongitude').value;
-
             let from = [initialLongitude, initialLatitude];
             let to = [<?php echo $longitude; ?>, <?php echo $latitude; ?>];
-
             let url = `https://api.mapbox.com/directions/v5/mapbox/driving/${from[0]},${from[1]};${to[0]},${to[1]}?access_token=${mapboxgl.accessToken}`;
 
             fetch(url)
@@ -235,6 +245,7 @@ if (isset($_POST["GuardarViaje"])) {
                 });
         }
 
+        //Funcion para recueprar la meteorologia con la api de weatherapi
         function getWeather() {
             let latitude = <?php echo $latitude; ?>;
             let longitude = <?php echo $longitude; ?>;

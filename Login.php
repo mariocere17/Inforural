@@ -1,10 +1,12 @@
 <?php
 session_start();
+//BD
 $user = 'root';
 $pass = '';
 $bd = 'tfg';
 $conexion = new mysqli('localhost', $user, $pass, $bd);
 
+//Funciones BBDD
 function insertUser(){
     global $conexion;
     $user = $_POST["registerUser"];
@@ -28,6 +30,7 @@ function getUsuario($nombre, $password){
     }
 }
 
+//Redireccionamiento
 if (isset($_POST["login"])) {
     $user = $_POST["loginUser"];
     $password = $_POST["loginPassword"];
@@ -37,7 +40,6 @@ if (isset($_POST["login"])) {
     }else{
         header("Location: login.php");
     }
-
     exit();
 } elseif (isset($_POST["register"])) {
     insertUser();
